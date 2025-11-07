@@ -12,7 +12,7 @@ Install Violentmonkey from [github.io](https://violentmonkey.github.io/).
 
 ## Scripts
 
-Open the Violent Monkey Dashboard.
+Open the Violentmonkey Dashboard.
 
 ![images/dashboard](images/ViolentMonkey_Dashboard.png)
 
