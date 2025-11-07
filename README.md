@@ -4,13 +4,6 @@ This violentmonkey script for Firefox enables a batch download for documents fro
 # violentmonkey
 To use this script, you need the browser extentension [Violentmonkey](https://violentmonkey.github.io/). This extension allow the execution of user scripts.
 
-## Content
-
-- [Userscript Manager](#userscript-manager)
-- [Scripts](#scripts)
-  - [Download documents from postbox - ing.de](#download-documents-from-postbox---ingde)
-
-
 ## Userscript Manager
 
 Install Violentmonkey from [github.io](https://violentmonkey.github.io/).
