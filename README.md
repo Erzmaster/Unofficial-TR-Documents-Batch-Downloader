@@ -34,3 +34,14 @@ After successful installation reload the page in question.
 In order for the script to successfully work, set "Datei speichern" ("Save file") for PDFs in the Browser settings (else it just opens a new tab for every PDF and does not download it automatically).
 
 ![images/browser](images/Firefox_BrowserSettings.png)
+
+## Usage in https://app.traderepublic.com
+
+The User Interface open when navigating to https://app.traderepublic.com/profile/transactions and https://app.traderepublic.com/profile/activities
+To use it, press start.
+
+![images/usage](images/Overlay_Active.png)
+
+The script is active once accessing https://app.traderepublic.com. But you can turn it off during login or anytime you do not need it via the browser plugin. 
+
+![images/toggle](images/ViolentMonkey_Toggle.png)
