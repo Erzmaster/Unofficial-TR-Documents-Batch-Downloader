@@ -42,6 +42,6 @@ To use it, press start.
 
 ![images/usage](images/Overlay_Active.png)
 
-The script is active once accessing https://app.traderepublic.com. But you can turn it off during login or anytime you do not need it via the browser plugin. 
+The script is active once accessing https://app.traderepublic.com. But you can turn it off during login or anytime you do not need it via the browser plugin. Make sure to hit tab reload ("Tab neu laden") via the browser plugin, so the changes become active.
 
 ![images/toggle](images/ViolentMonkey_Toggle.png)
