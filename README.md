@@ -1,5 +1,7 @@
 # Unofficial-TR-Document-Batch-Downloader-for-Firefox
-This violentmonkey script for Firefox enables a batch download for documents from traderepublic.com. This is an unofficial and private script. I am not affiliated with Trade Republic in any way.
+This violentmonkey script for Firefox enables a batch download for documents from traderepublic.com. 
+This userscript is an unofficial, private project and is not affiliated with, endorsed by, or supported by Trade Republic Bank GmbH.
+Use at your own risk. The author assumes no responsibility for any consequences resulting from its use. 
 
 # violentmonkey
 To use this script, you need the browser extentension [Violentmonkey](https://violentmonkey.github.io/). This extension allow the execution of user scripts.
