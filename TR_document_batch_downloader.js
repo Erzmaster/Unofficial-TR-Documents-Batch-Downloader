@@ -2,7 +2,7 @@
 // @name         TR Document Batch Downloader
 // @version      2.0
 // @namespace    tr-batch-dl
-// @description  Automatically iterates Trade Republic transaction/activity tabs, opens each entry, and downloads linked documents with optional auto-renaming of file names.
+// @description  Automatically iterates Trade Republic transaction/activity tabs, opens each entry, and downloads linked documents with optional auto-renaming.
 // @match        https://app.traderepublic.com/*
 // @run-at       document-idle
 // @grant        GM_download
@@ -13,8 +13,6 @@
   "use strict";
   const SCRIPT_VERSION = "2.0";
   console.log("[GM Test] Version", SCRIPT_VERSION);
-
-  const PAGE = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
   // ---------------- Config ----------------
   const CFG = {
@@ -61,12 +59,15 @@
     }
   };
 
+  
+
   const DEFAULT_FILENAME_TEMPLATE = CFG.filenameTemplate;
   const DEFAULT_DATE_FORMAT = CFG.dateFormat;
   const DEFAULT_USE_CUSTOM_NAMES = CFG.useCustomNames;
   const FILENAME_TEMPLATE_KEY = 'trbd_filename_template';
   const DATE_FORMAT_KEY = 'trbd_date_format';
   const CUSTOM_NAME_KEY = 'trbd_use_custom_names';
+  const PAGE = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
   try {
     const storedTemplate = localStorage.getItem(FILENAME_TEMPLATE_KEY);
     if (storedTemplate) CFG.filenameTemplate = storedTemplate;
