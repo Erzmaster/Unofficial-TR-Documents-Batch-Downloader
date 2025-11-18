@@ -1,13 +1,18 @@
 // ==UserScript==
 // @name         TR Document Batch Downloader
 // @version      3.0
-// @namespace    tr-batch-dl
-// @description  Automatically iterates Trade Republic transaction/activity tabs, opens each entry, and downloads linked documents with optional auto-renaming of file names.
+// @description  App to batch download documents from Trade Republic. Additionally it allows renaming of documents by Date, Title, Subtitle and Document-Name.
+// @function1    The app automatically iterates all entries in the transactions & activity tabs from Trade Republic. It opens each timeline entry and downloads the attached documents.
+// @function2    The documents can be automatically renamed - the available variables for renaming are Date, Title, Subtitle and Document-Name.
+// @languages    User Interface in English and German. Supports Trade Republic website in all available languages (Deutsch, English, Espanol, Francais, Italiano, Portugues, Nederlands, Suomi)
+// @namespace    https://github.com/Erzmaster/Unofficial-TR-Document-Batch-Downloader-for-Firefox
+// @downloadURL  https://raw.githubusercontent.com/Erzmaster/Unofficial-TR-Document-Batch-Downloader-for-Firefox/refs/heads/main/TR_document_batch_downloader.js
 // @match        https://app.traderepublic.com/*
 // @run-at       document-idle
 // @grant        GM_download
 // @noframes
 // ==/UserScript==
+
 
 (function () {
   "use strict";
