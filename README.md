@@ -1,4 +1,4 @@
-# Unofficial-TR-Document-Batch-Downloader-for-Firefox
+# Unofficial-TR-Documents-Batch-Downloader
 This violentmonkey script for Firefox enables a batch download/ mass download for documents from traderepublic.com. 
 This userscript is an unofficial, private project and is not affiliated with, endorsed by, or supported by Trade Republic Bank GmbH.
 Use at your own risk. The author assumes no responsibility for any consequences resulting from its use. 
@@ -19,9 +19,9 @@ To add a new script, click on the + button.
 
 Select *New*,copy and paste the script code and hit *Save & Close*. Alternatively select *Install from URL* and paste the raw link to the file.
 
-**Script:** [TR_document_batch_downloader.js](TR_document_batch_downloader.js)
+**Script:** [TR_documents_batch_downloader.js](TR_documents_batch_downloader.js)
 
-**Raw File:** [TR_document_batch_downloader.js](https://raw.githubusercontent.com/Erzmaster/Unofficial-TR-Document-Batch-Downloader-for-Firefox/main/TR_document_batch_downloader.js)
+**Raw File:** [TR_documents_batch_downloader.js](https://raw.githubusercontent.com/Erzmaster/Unofficial-TR-Documents-Batch-Downloader/main/TR_documents_batch_downloader.js)
 
 After successful installation reload the page in question.
 
