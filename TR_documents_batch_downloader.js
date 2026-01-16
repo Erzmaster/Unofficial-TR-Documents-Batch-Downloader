@@ -5,8 +5,8 @@
 // @function1    The app automatically iterates all entries in the transactions & activity tabs from Trade Republic. It opens each timeline entry and downloads the attached documents.
 // @function2    The documents can be automatically renamed - the available variables for renaming are Date, Title, Subtitle and Document-Name.
 // @languages    User Interface in English and German. Supports Trade Republic website in all available languages (Deutsch, English, Espanol, Francais, Italiano, Portugues, Nederlands, Suomi)
-// @namespace    https://github.com/Erzmaster/Unofficial-TR-Document-Batch-Downloader-for-Firefox
-// @downloadURL  https://raw.githubusercontent.com/Erzmaster/Unofficial-TR-Document-Batch-Downloader-for-Firefox/refs/heads/main/TR_document_batch_downloader.js
+// @namespace    https://github.com/Erzmaster/Unofficial-TR-Documents-Batch-Downloader
+// @downloadURL  https://raw.githubusercontent.com/Erzmaster/Unofficial-TR-Documents-Batch-Downloader/refs/heads/main/TR_documents_batch_downloader.js
 // @match        https://app.traderepublic.com/*
 // @run-at       document-idle
 // @grant        GM_download
