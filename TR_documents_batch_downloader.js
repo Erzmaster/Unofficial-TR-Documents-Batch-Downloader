@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         TR Document Batch Downloader
+// @name         TR Documents Batch Downloader
 // @version      3.0
 // @description  App to batch download documents from Trade Republic. Additionally it allows renaming of documents by Date, Title, Subtitle and Document-Name.
 // @function1    The app automatically iterates all entries in the transactions & activity tabs from Trade Republic. It opens each timeline entry and downloads the attached documents.
