@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         TR Documents Batch Downloader
-// @version      3.0
+// @version      3.1
 // @description  App to batch download documents from Trade Republic. Additionally it allows renaming of documents by Date, Title, Subtitle and Document-Name.
 // @function1    The app automatically iterates all entries in the transactions & activity tabs from Trade Republic. It opens each timeline entry and downloads the attached documents.
 // @function2    The documents can be automatically renamed - the available variables for renaming are Date, Title, Subtitle and Document-Name.
@@ -16,7 +16,7 @@
 
 (function () {
   "use strict";
-  const SCRIPT_VERSION = "3.0";
+  const SCRIPT_VERSION = "3.1";
   console.log("[GM Test] Version", SCRIPT_VERSION);
 
   // ---------------- Config ----------------
@@ -25,9 +25,7 @@
     slowMode: true,
     debugOutline: true,
     filenameTemplate: '{date}_{title}_{subtitle}_{docname}',
-    dateFormat: 'YYYYMMDD',
-    defaultStartIndex: 0,
-    defaultEndIndex: -1,
+    dateFormat: 'YYYY-MM-DD_hhmm',
     useCustomNames: true,
 
     // Tab-Lock
@@ -111,32 +109,6 @@
     delete el.dataset._trbd_ow;
   };
 
-  const MONTH_MAP = {
-    januar: 1,
-    februar: 2,
-    maerz: 3,
-    märz: 3,
-    april: 4,
-    mai: 5,
-    juni: 6,
-    juli: 7,
-    august: 8,
-    september: 9,
-    oktober: 10,
-    november: 11,
-    dezember: 12,
-    december: 12
-  };
-
-  const normalizeMonthName = (name = '') =>
-    name.toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/ä/g, 'ae')
-      .replace(/ö/g, 'oe')
-      .replace(/ü/g, 'ue')
-      .replace(/\s+/g, '');
-
   const extractYearFromHeading = (text = '') => {
     const match = text.match(/(19|20)\d{2}/);
     if (match) return parseInt(match[0], 10);
@@ -190,16 +162,6 @@
       }
     }
 
-    // textual month (e.g. 1. Oktober)
-    if ((!day || !month) && /(\d{1,2})\.\s*[A-Za-zÄÖÜäöü]+/.test(text)) {
-      match = text.match(/(\d{1,2})\.\s*([A-Za-zÄÖÜäöü]+)/);
-      if (match) {
-        day = parseInt(match[1], 10);
-        const normalized = normalizeMonthName(match[2]);
-        month = MONTH_MAP[normalized];
-      }
-    }
-
     if (!day || !month) return null;
     year = year || fallbackYear || new Date().getFullYear();
     return { day, month, year };
@@ -207,8 +169,15 @@
 
   const resolveDateParts = (meta = {}) => {
     const yearFromDivider = meta.itemYear || new Date().getFullYear();
-    // Datum kommt aus dem Timeline-Subtitle; Jahr aus dem Month-Divider
-    return parseDateString(meta.itemDate, yearFromDivider) || null;
+    // Datum kommt aus dem Timeline-Subtitle; Jahr bevorzugt aus Modal, sonst Month-Divider
+    const fallbackYear = meta.modalYear || yearFromDivider;
+    const parts = parseDateString(meta.itemDate, fallbackYear) || null;
+    if (parts) {
+      // Enrich with time from modal if available
+      if (meta.modalHour !== undefined) parts.hour = meta.modalHour;
+      if (meta.modalMinute !== undefined) parts.minute = meta.modalMinute;
+    }
+    return parts;
   };
 
   const formatDateParts = (parts, format) => {
@@ -218,9 +187,13 @@
       YYYY: parts.year,
       YY: String(parts.year).slice(-2),
       MM: pad(parts.month),
-      DD: pad(parts.day)
+      DD: pad(parts.day),
+      hh: parts.hour !== undefined ? pad(parts.hour) : '',
+      mm: parts.minute !== undefined ? pad(parts.minute) : ''
     };
-    return format.replace(/YYYY|YY|MM|DD/g, token => map[token] ?? token);
+    const result = format.replace(/YYYY|YY|MM|DD|hh|mm/g, token => map[token] ?? token);
+    // Collapse consecutive separators left behind when hh/mm are empty
+    return result.replace(/([._\-]){2,}/g, '$1').replace(/[._\-]+$/, '');
   };
 
   const getTimelineItemContext = (item) => {
@@ -244,6 +217,30 @@
     return { itemTitle: title, itemDate: datePart, itemSubtitle: subtitle, itemYear };
   };
 
+  // Extracts year and time from the modal header (p.detailHeader__subheading.-time)
+  // "24. Juni um 16:41" → { modalYear: null, modalHour: 16, modalMinute: 41 }
+  // "25. Juni 2025 um 10:39" → { modalYear: 2025, modalHour: 10, modalMinute: 39 }
+  const extractModalTimeInfo = (modal) => {
+    if (!modal) return {};
+    // Search document directly – getActiveModal() may return a parent that
+    // doesn't contain the subheading as a descendant (different nesting level).
+    const el = document.querySelector('.detailHeader__subheading.-time, p.detailHeader__subheading');
+    if (!el) return {};
+    const text = el.textContent?.trim() || '';
+    if (!text) return {};
+    const result = {};
+    // Year: 4-digit number (not part of the time HH:MM)
+    const yearMatch = text.match(/((?:19|20)\d{2})(?!\s*:)/);
+    if (yearMatch) result.modalYear = parseInt(yearMatch[1], 10);
+    // Time: HH:MM
+    const timeMatch = text.match(/(\d{1,2}):(\d{2})/);
+    if (timeMatch) {
+      result.modalHour = parseInt(timeMatch[1], 10);
+      result.modalMinute = parseInt(timeMatch[2], 10);
+    }
+    return result;
+  };
+
   // ---------------- i18n ----------------
   const STRINGS = {
     de: {
@@ -257,8 +254,8 @@
       customNames: 'Dateinamen umbenennen',
       filenameLabel: 'Dateinamen-Template',
       filenameTokens: 'Tokens: {title}, {date}, {subtitle}, {docname}',
-      dateFormatLabel: 'Datumsformat',
-      dateFormatTokens: 'Tokens: YYYY, YY, MM, DD',
+      dateFormatLabel: 'Datums- und Zeitformat',
+      dateFormatTokens: 'Tokens: YYYY, YY, MM, DD, hh, mm',
       resetFilename: 'Dateinamen zurücksetzen',
       resetDate: 'Datumsformat zurücksetzen',
       resetAll: 'Alles auf Standard',
@@ -273,7 +270,6 @@
       statusFilter: 'Filter: {from} bis {to} (lade…)',
       statusStopRequested: 'Stop angefordert …',
       statusInvalidDate: 'Ungültiges Datum bei "{label}": {value} (z.B. 01.01.2025 oder Heute/Anfang/Ende)',
-      statusInvalidRange: 'Ungültiger Datumsbereich ({from} > {to}).',
       statusNoRange: 'Keine Einträge im Datumsbereich.',
       statusRunDone: 'Durchlauf abgeschlossen ✅',
       statusAborted: 'Abgebrochen.',
@@ -281,7 +277,8 @@
       statusNoOverlay: '({i}/{end}) Kein Overlay – skip',
       statusOpenDocs: '({i}/{end}) Öffne Dokumente …',
       statusCloseOverlay: '({i}/{end}) Schließe Overlay …',
-      statusDoneItem: '({i}/{end}) Fertig – {count} Dokument(e).'
+      statusDoneItem: '({i}/{end}) Fertig – {count} Dokument(e).',
+      statusSessionLost: 'Session verloren (bei Eintrag {i}/{end}). Bitte neu einloggen und erneut starten.'
     },
     en: {
       title: 'TR Batch Downloader',
@@ -294,8 +291,8 @@
       customNames: 'Rename file names',
       filenameLabel: 'Filename template',
       filenameTokens: 'Tokens: {title}, {date}, {subtitle}, {docname}',
-      dateFormatLabel: 'Date format',
-      dateFormatTokens: 'Tokens: YYYY, YY, MM, DD',
+      dateFormatLabel: 'Date and time format',
+      dateFormatTokens: 'Tokens: YYYY, YY, MM, DD, hh, mm',
       resetFilename: 'Reset filename',
       resetDate: 'Reset date format',
       resetAll: 'Reset all',
@@ -310,7 +307,6 @@
       statusFilter: 'Filter: {from} to {to} (loading…)',
       statusStopRequested: 'Stop requested …',
       statusInvalidDate: 'Invalid date in "{label}": {value} (e.g. 01/01/2025 or Today/Start/End)',
-      statusInvalidRange: 'Invalid date range ({from} > {to}).',
       statusNoRange: 'No entries in date range.',
       statusRunDone: 'Run finished ✅',
       statusAborted: 'Aborted.',
@@ -318,7 +314,8 @@
       statusNoOverlay: '({i}/{end}) No overlay – skip',
       statusOpenDocs: '({i}/{end}) Opening documents …',
       statusCloseOverlay: '({i}/{end}) Closing overlay …',
-      statusDoneItem: '({i}/{end}) Done – {count} document(s).'
+      statusDoneItem: '({i}/{end}) Done – {count} document(s).',
+      statusSessionLost: 'Session lost (at entry {i}/{end}). Please log in again and restart.'
     }
   };
 
@@ -443,14 +440,6 @@
         if (!pending) log('Tracker peek: empty');
         return pending;
       },
-      clear() {
-        log('Tracker clear()');
-        pending = null;
-        if (timer) clearTimeout(timer);
-        timer = null;
-        closePendingPopups();
-        navigationHooks.disable();
-      }
     };
   })();
 
@@ -476,27 +465,21 @@
     }
     const tokens = {
       title: meta?.itemTitle?.trim() || '',
-      date: meta?.itemDate?.trim() || meta?.docDate?.trim() || '',
+      date: meta?.itemDate?.trim() || '',
       subtitle: meta?.itemSubtitle?.trim() || '',
-      docname: meta?.docTitle?.trim() || '',
-      doc: meta?.docTitle?.trim() || '' // legacy alias
+      docname: meta?.docTitle?.trim() || ''
     };
     if (!tokens.docname) tokens.docname = fallback.replace(/\.pdf$/i, '');
 
     const dateParts = resolveDateParts(meta);
     const formattedDate = dateParts
       ? formatDateParts(dateParts, CFG.dateFormat || DEFAULT_DATE_FORMAT)
-      : (meta?.itemDate || meta?.docDate || tokens.date);
+      : (meta?.itemDate || tokens.date);
     tokens.date = formattedDate || tokens.date;
 
-    let template = CFG.filenameTemplate || '{docname}';
-    try {
-      const stored = localStorage.getItem(FILENAME_TEMPLATE_KEY);
-      if (stored) template = stored;
-    } catch {}
-
-    const filled = template.replace(/\{(title|date|subtitle|docname|doc)\}/gi, (_, key) => tokens[key.toLowerCase()] || '');
-    let base = filled.trim() || tokens.docname || tokens.doc || fallback.replace(/\.pdf$/i, '');
+    const template = CFG.filenameTemplate || '{docname}';
+    const filled = template.replace(/\{(title|date|subtitle|docname)\}/gi, (_, key) => tokens[key.toLowerCase()] || '');
+    let base = filled.trim() || tokens.docname || fallback.replace(/\.pdf$/i, '');
     base = sanitizeFilename(base) || 'document';
     if (!/\.pdf$/i.test(base)) base += '.pdf';
     return base;
@@ -590,6 +573,22 @@
     log('window.open für GM_download gehookt');
   })();
 
+  // ---------------- Session Check ----------------
+  function checkSession() {
+    // 1. URL must still be under /profile/
+    if (!(/\/profile\/(transactions|activities)/.test(location.pathname))) {
+      log('Session-Check: Pfad gewechselt →', location.pathname);
+      return false;
+    }
+    // 2. Timeline DOM must still exist
+    const timeline = document.querySelector('.timeline, .timeline__entries, ol.timeline__entries');
+    if (!timeline) {
+      log('Session-Check: Timeline-Element nicht mehr im DOM');
+      return false;
+    }
+    return true;
+  }
+
   // ---------------- Tab-Lock ----------------
   function desiredPathFromLocation() {
     return location.pathname.includes('/activities')
@@ -666,16 +665,17 @@
         btn.querySelector('.detailDocuments__documentTitle')?.textContent?.trim() ||
         btn.getAttribute('title') ||
         `Dokument ${i+1}`;
-      const docDate = btn.querySelector('.detailDocuments__documentDate')?.textContent?.trim() || '';
       downloadTracker.set({
         docTitle,
-        docDate,
         docIndex: i + 1,
         docTotal: docs.length,
         itemTitle: context.itemTitle,
         itemDate: context.itemDate,
         itemSubtitle: context.itemSubtitle,
-        itemYear: context.itemYear
+        itemYear: context.itemYear,
+        modalYear: context.modalYear,
+        modalHour: context.modalHour,
+        modalMinute: context.modalMinute
       });
       mark(btn, 'magenta');
       try { btn.scrollIntoView({ block:'center', inline:'nearest' }); } catch {}
@@ -1031,7 +1031,7 @@ langEl?.addEventListener('change', () => {
         const tplInput = box.querySelector('#trbd-template').value.trim();
         CFG.filenameTemplate = tplInput || DEFAULT_FILENAME_TEMPLATE;
         try { localStorage.setItem(FILENAME_TEMPLATE_KEY, CFG.filenameTemplate); } catch {}
-        const dateFormatInput = box.querySelector('#trbd-dateformat').value.trim().toUpperCase();
+        const dateFormatInput = box.querySelector('#trbd-dateformat').value.trim();
         CFG.dateFormat = dateFormatInput || DEFAULT_DATE_FORMAT;
         try { localStorage.setItem(DATE_FORMAT_KEY, CFG.dateFormat); } catch {}
       }
@@ -1096,7 +1096,6 @@ langEl?.addEventListener('change', () => {
         const dispFrom = lowerLabel || startLabel || defaultFromLabel;
         const dispTo   = upperLabel || endLabel || defaultToTodayLabel;
         ui.setStatus(tr('statusFilter', { from: dispFrom, to: dispTo }), '#9fdcff');
-        const desiredCount = Infinity;
 
         let listContainer = findScrollableListContainer();
         let items = getListItems();
@@ -1104,7 +1103,6 @@ langEl?.addEventListener('change', () => {
           ui.setStatus(tr('statusLoadMore'), '#ffd27a');
           let iterations = 0;
           while (true) {
-            if (Number.isFinite(desiredCount) && items.length >= desiredCount) break;
             const before = items.length;
             await autoScrollListToLoadMore(listContainer);
             items = getListItems();
@@ -1133,6 +1131,14 @@ langEl?.addEventListener('change', () => {
         for (let i = 0; i <= endIdx; i++) {
           if (stopFlag) break;
 
+          // Session-Check: sind wir noch eingeloggt?
+          if (!checkSession()) {
+            log('Session verloren bei Eintrag', i, '/', endIdx);
+            ui.setStatus(tr('statusSessionLost', { i, end: endIdx }), '#ff6b6b');
+            stopFlag = true;
+            break;
+          }
+
           await ensureActiveTab(desiredPath);
           const item = items[i];
           if (!item) { log(`(${i}/${endIdx}) kein Item (nicht geladen) – skip`); continue; }
@@ -1156,6 +1162,13 @@ langEl?.addEventListener('change', () => {
             ui.setStatus(tr('statusNoOverlay', { i, end: endIdx }), '#ffd27a');
             continue;
           }
+
+          // Extract year + time from modal header (hybrid approach)
+          const modalInfo = extractModalTimeInfo(overlay);
+          if (modalInfo.modalYear) itemCtx.modalYear = modalInfo.modalYear;
+          if (modalInfo.modalHour !== undefined) itemCtx.modalHour = modalInfo.modalHour;
+          if (modalInfo.modalMinute !== undefined) itemCtx.modalMinute = modalInfo.modalMinute;
+          log('Modal-Info:', modalInfo);
 
           ui.setStatus(tr('statusOpenDocs', { i, end: endIdx }));
           const count = await clickAllDocs(itemCtx);
