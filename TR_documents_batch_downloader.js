@@ -36,6 +36,7 @@
     listItemSel: '.clickable.timelineEventAction:not(.detailDocuments__action)',
     closeSel: 'button.closeButton.sideModal__close, .closeButton.sideModal__close, .sideModal__close, [aria-label="Close"], [aria-label="Schließen"]',
     docButtonSel: '.clickable.timelineEventAction.detailDocuments__action',
+    showMoreSel: '[data-qa="show-more-button"]',
 
     // Timings
     slow: {
@@ -654,8 +655,19 @@
     return Array.from(document.querySelectorAll(CFG.docButtonSel)).filter(isVisible);
   }
 
+  async function showMoreIfPresent() {
+    const showMoreBtn = document.querySelector(CFG.showMoreSel);
+    if (showMoreBtn) {
+      mark(showMoreBtn, 'yellow');
+      try { showMoreBtn.click(); } catch {}
+      await sleep(T().focusDelay);
+      unmark(showMoreBtn);
+    }
+  }
+
   async function clickAllDocs(context = {}) {
     console.group(`${LOG_PREFIX} Dokumente öffnen`, LOG_STYLE);
+    await showMoreIfPresent();
     const docs = findDocsButtons();
     log('Dokumente gefunden:', docs.length);
     let opened = 0;
